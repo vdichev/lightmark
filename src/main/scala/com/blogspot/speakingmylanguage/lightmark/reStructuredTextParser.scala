@@ -1,4 +1,4 @@
-package com.blogspot.speakingmylanguage.rst
+package com.blogspot.speakingmylanguage.lightmark
 
 import _root_.scala.util.parsing.combinator.{Parsers, ImplicitConversions}
 import _root_.scala.util.parsing.input._

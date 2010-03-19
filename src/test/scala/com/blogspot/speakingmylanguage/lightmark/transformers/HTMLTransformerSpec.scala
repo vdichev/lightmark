@@ -1,4 +1,4 @@
-package com.blogspot.speakingmylanguage.rst.transformers
+package com.blogspot.speakingmylanguage.lightmark.transformers
 
 import scala.xml._
 import org.specs._
