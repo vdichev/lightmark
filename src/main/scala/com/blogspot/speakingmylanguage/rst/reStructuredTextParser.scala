@@ -7,11 +7,21 @@ import _root_.scala.collection.mutable.HashMap
 
 import java.util.regex.Pattern
 
+import scala.collection.immutable.Stack
+
 object reStructuredTextParser extends Parsers with ImplicitConversions {
   implicit def strToInput(in: String): Input = new CharArrayReader(in.toCharArray)
   /*implicit def str2chars(s: String): List[Char] = augmentString(s).toList*/
   
   type Elem = Char
+  
+  var headingLevels: Stack[Char] = Stack.Empty
+  
+  def getLevel(c: Char): Int = {
+    if (!(headingLevels contains c))
+      headingLevels = headingLevels push c
+    return (headingLevels findIndexOf { c == _ }) + 1
+  }
   
   val punctRegex = Pattern.compile("""\p{Punct}""")
   
@@ -50,21 +60,32 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     case overline ~ _ ~ text ~ _ ~ underline
       if underline.length >= text.length &&
          underline.length == overline.length &&
-         overline.c == underline.c =>
-           Section(text.mkString)
+         overline.c == underline.c => {
+           Section(text.mkString, getLevel(underline.c))
+         }
   }
 
   lazy val underlineTitle: Parser[reStructuredText] = not(wsc) ~> rep1(not(newline) ~> anyChar) ~ newline ~ separator <~ whiteSpace ^? {
     case text ~ _ ~ underline
       if underline.length >= text.length =>
-        Section(text.mkString)
+        Section(text.mkString, getLevel(underline.c))
   }
 
+  lazy val blankLine = newline ~ rep1(rep(' ') ~ newline)
+  
+  lazy val EOF = not(anyChar)
+  
+  lazy val paraElem = title | paragraph
+  
+  lazy val paragraph = rep1(not(newline) ~> anyChar) <~ (blankLine | EOF) ^^ {
+    case text => Paragraph(text.mkString)
+  }
+  
+  lazy val rst = paraElem*
+  // lazy val lineElem
   
 
   def main(args: Array[String]) {
-    import transformers._
-    println(HTMLTransformer.convert(title("test\n====").get))
   }
 }
 
@@ -72,4 +93,7 @@ abstract class reStructuredText
 
 case class Separator(c: Char, length: Int) extends reStructuredText
 
-case class Section(title: String) extends reStructuredText
+case class Section(title: String, level: Int) extends reStructuredText
+
+case class Paragraph(text: String) extends reStructuredText
+
