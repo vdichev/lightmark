@@ -4,54 +4,56 @@ import org.specs._
 import reStructuredTextParser._
 
 class reStructuredTextParserSpec extends Specification {
+  type rstParser = reStructuredTextParser
+
   "overline section title" should {
     "parse valid markup" in {
-      title("""|====
+      new rstParser().title("""|====
                |test
                |====""".stripMargin
       ) must beLike {
         case Success(Section("test", 1), _) => true
       }
     }
-    
+
     "parse inset markup" in {
-      title("""|=====
+      new rstParser().title("""|=====
                | test
                |=====""".stripMargin
       ) must beLike {
         case Success(Section("test", 1), _) => true
       }
     }
-    
+
     "fail shorter separator" in {
-      title("""|--
+      new rstParser().title("""|--
                |test
                |----""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
       }
     }
-    
+
     "fail unequal separators" in {
-      title("""|-----
+      new rstParser().title("""|-----
                |test
                |------""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
       }
     }
-    
+
     "fail diffirent characters in one separator" in {
-      title("""|==-=
+      new rstParser().title("""|==-=
                |test
                |====""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
       }
     }
-    
+
     "fail separators with different characters in each" in {
-      title("""|----
+      new rstParser().title("""|----
                |test
                |====""".stripMargin
       ) must beLike {
@@ -59,10 +61,10 @@ class reStructuredTextParserSpec extends Specification {
       }
     }
   }
-  
+
   "underline section title" should {
     "parse valid markup" in {
-      title("""|test
+      new rstParser().title("""|test
                |====""".stripMargin
       ) must beLike {
         case Success(Section("test", 1), _) => true
@@ -70,7 +72,7 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail inset markup" in {
-      title("""| test
+      new rstParser().title("""| test
                |=====""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
@@ -78,26 +80,26 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail shorter separator" in {
-      title("""|test
+      new rstParser().title("""|test
                |--""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
       }
     }
-    
+
     "fail diffirent characters in one separator" in {
-      title("""|test
+      new rstParser().title("""|test
                |=-==""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
       }
     }
-    
+
   }
-  
+
   "nested structures" should {
     "match multiple section titles" in {
-      rst("""|test
+      new rstParser().rst("""|test
              |====
              |test2
              |-----
@@ -113,7 +115,7 @@ class reStructuredTextParserSpec extends Specification {
       }
     }
     "match a section with paragraphs" in {
-      rst("""|test
+      new rstParser().rst("""|test
              |====
              |text
              |
@@ -127,7 +129,7 @@ class reStructuredTextParserSpec extends Specification {
       }
     }
     "match multiple sections with paragraphs" in {
-      rst("""|sec1
+      new rstParser().rst("""|sec1
              |====
              |text
              |
@@ -152,7 +154,7 @@ class reStructuredTextParserSpec extends Specification {
       }
     }
   }
-  
+
   "paragraphs" should {
     "end in a blank line" in {
       paragraph("text\n\n") must beLike {
