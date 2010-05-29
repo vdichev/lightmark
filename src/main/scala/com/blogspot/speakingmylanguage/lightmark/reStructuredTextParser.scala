@@ -12,6 +12,7 @@ import scala.collection.immutable.Stack
 class reStructuredTextParser {
   import reStructuredTextParser._
 
+  // A structure indicating which character underlines each section level
   var headingLevels: Stack[Char] = Stack.Empty
 
   def getLevel(c: Char): Int = {
@@ -59,6 +60,8 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     case s => Separator(s.head, s.length)
   }
 
+  // A parser which captures the first element and matches repetitions
+  // of the same character
   def repFirst(p: Parser[Elem]): Parser[List[Elem]] = Parser { in =>
     p(in) match {
       case s @ Success(v, _) => rep(v)(in)
