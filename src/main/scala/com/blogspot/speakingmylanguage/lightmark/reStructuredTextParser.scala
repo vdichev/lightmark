@@ -38,9 +38,7 @@ class reStructuredTextParser {
         Section(text.mkString, getLevel(underline.c))
   }
 
-  lazy val paraElem = title | paragraph
-
-  lazy val rst = paraElem*
+  lazy val rst = (title | block(0))*
 }
 
 object reStructuredTextParser extends Parsers with ImplicitConversions {
@@ -81,30 +79,71 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   def wsc(c: Char): Boolean = Character.isWhitespace(c) // ' ' || c == '\n' || c == '\r' || c == '\t'
   def wsc: Parser[Elem] = elem("wsc", wsc)
 
+  lazy val space: Parser[Elem] = elem(' ')
+
   def whiteSpace: Parser[Unit] = rep(wsc) ^^^ ()
 
   def anyChar: Parser[Elem] = elem("Any Char", c => c != '\032')
 
-  lazy val blankLine = newline ~ rep1(rep(' ') ~ newline)
+  lazy val blankLine = rep1(rep(' ') ~ newline)
 
   lazy val EOF = not(anyChar)
 
-  lazy val paragraph = rep1(not(newline) ~> anyChar) <~ (blankLine | EOF) ^^ {
-    case text => Paragraph(text.mkString)
+  lazy val line = not(wsc) ~> rep1(not(newline) ~> anyChar) <~ (newline | EOF)
+
+  def paragraph(indent: Int) = line ~ rep( repN(indent, ' ') ~> line) <~ opt(blankLine) ^^ {
+    case line1 ~ lines => Paragraph((line1 :: lines).map{_.mkString}.mkString(" "))
   }
 
-  // lazy val lineElem
-
-
-  def main(args: Array[String]) {
+  lazy val bulletLead: Parser[Bullet] = rep(space) ~ bullet ~ rep1(space)^^ {
+    case bulletIndent ~ bulletChar ~ bodyIndent =>
+      Bullet(bulletIndent.length, bulletChar, bodyIndent.length)
   }
+
+  def bulletItem(indent: Int, bulletIndent: Int, c: Char, bodyIndent: Int): Parser[BulletItem] = {
+    val totalIndent = indent + bulletIndent + 1 + bodyIndent
+    repN(bulletIndent, ' ') ~ c ~ repN(bodyIndent, ' ') ~ block(totalIndent) ~
+    rep(repN(totalIndent, ' ') ~> block(totalIndent)) ^^ {
+      case _ ~ block1 ~ blocks => BulletItem(block1 :: blocks)
+    }
+  }
+
+  def fixedIndentBulletList(indent: Int, bulletIndent: Int, c: Char, bodyIndent: Int): Parser[BulletList] =
+    bulletItem(indent, bulletIndent, c, bodyIndent) ~
+    rep(bulletItem(0, indent + bulletIndent, c, bodyIndent)) ^^ {
+      case item1 ~ items =>
+        BulletList(indent + bulletIndent + 1 + bodyIndent, item1 :: items)
+    }
+
+  def bulletList(indent: Int): Parser[BulletList] = Parser { in =>
+    bulletLead(in) match {
+      case s @ Success(v, _) =>
+        fixedIndentBulletList(indent, v.bulletIndent, v.c, v.bodyIndent)(in)
+      case e @ Error(msg, _) => Error(msg, in)
+      case f @ Failure(msg, _) => Failure(msg, in)
+    }
+  }
+
+  def block(indent: Int) = bulletList(indent) | paragraph(indent)
+
 }
 
 abstract class reStructuredText
 
-case class Separator(c: Char, length: Int) extends reStructuredText
+abstract class Block extends reStructuredText
 
-case class Section(title: String, level: Int) extends reStructuredText
+abstract class Inline extends reStructuredText
 
-case class Paragraph(text: String) extends reStructuredText
+abstract class Raw extends reStructuredText
 
+case class Separator(c: Char, length: Int) extends Raw
+
+case class Section(title: String, level: Int) extends Block
+
+case class Paragraph(text: String) extends Block
+
+case class Bullet(bulletIndent: Int, c: Char, bodyIndent: Int) extends Raw
+
+case class BulletItem(content: List[Block]) extends Block
+
+case class BulletList(level: Int, items: List[BulletItem]) extends Block

@@ -8,7 +8,8 @@ class reStructuredTextParserSpec extends Specification {
 
   "overline section title" should {
     "parse valid markup" in {
-      new rstParser().title("""|====
+      new rstParser().
+      title("""|====
                |test
                |====""".stripMargin
       ) must beLike {
@@ -17,7 +18,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "parse inset markup" in {
-      new rstParser().title("""|=====
+      new rstParser().
+      title("""|=====
                | test
                |=====""".stripMargin
       ) must beLike {
@@ -26,7 +28,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail shorter separator" in {
-      new rstParser().title("""|--
+      new rstParser().
+      title("""|--
                |test
                |----""".stripMargin
       ) must beLike {
@@ -35,7 +38,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail unequal separators" in {
-      new rstParser().title("""|-----
+      new rstParser().
+      title("""|-----
                |test
                |------""".stripMargin
       ) must beLike {
@@ -44,7 +48,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail diffirent characters in one separator" in {
-      new rstParser().title("""|==-=
+      new rstParser().
+      title("""|==-=
                |test
                |====""".stripMargin
       ) must beLike {
@@ -53,7 +58,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail separators with different characters in each" in {
-      new rstParser().title("""|----
+      new rstParser().
+      title("""|----
                |test
                |====""".stripMargin
       ) must beLike {
@@ -64,7 +70,8 @@ class reStructuredTextParserSpec extends Specification {
 
   "underline section title" should {
     "parse valid markup" in {
-      new rstParser().title("""|test
+      new rstParser().
+      title("""|test
                |====""".stripMargin
       ) must beLike {
         case Success(Section("test", 1), _) => true
@@ -72,7 +79,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail inset markup" in {
-      new rstParser().title("""| test
+      new rstParser().
+      title("""| test
                |=====""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
@@ -80,7 +88,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail shorter separator" in {
-      new rstParser().title("""|test
+      new rstParser().
+      title("""|test
                |--""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
@@ -88,7 +97,8 @@ class reStructuredTextParserSpec extends Specification {
     }
 
     "fail diffirent characters in one separator" in {
-      new rstParser().title("""|test
+      new rstParser().
+      title("""|test
                |=-==""".stripMargin
       ) must beLike {
         case Failure(_, _) => true
@@ -99,7 +109,8 @@ class reStructuredTextParserSpec extends Specification {
 
   "nested structures" should {
     "match multiple section titles" in {
-      new rstParser().rst("""|test
+      new rstParser().
+      rst("""|test
              |====
              |test2
              |-----
@@ -115,7 +126,8 @@ class reStructuredTextParserSpec extends Specification {
       }
     }
     "match a section with paragraphs" in {
-      new rstParser().rst("""|test
+      new rstParser().
+      rst("""|test
              |====
              |text
              |
@@ -129,7 +141,8 @@ class reStructuredTextParserSpec extends Specification {
       }
     }
     "match multiple sections with paragraphs" in {
-      new rstParser().rst("""|sec1
+      new rstParser().
+      rst("""|sec1
              |====
              |text
              |
@@ -157,18 +170,119 @@ class reStructuredTextParserSpec extends Specification {
 
   "paragraphs" should {
     "end in a blank line" in {
-      paragraph("text\n\n") must beLike {
+      paragraph(0)("text\n\n") must beLike {
         case Success(Paragraph("text"), _) => true
       }
     }
     "end in a line with just spaces" in {
-      paragraph("text\n  \n") must beLike {
+      paragraph(0)("text\n  \n") must beLike {
         case Success(Paragraph("text"), _) => true
       }
     }
     "end at the end of the text" in {
-      paragraph("text") must beLike {
+      paragraph(0)("text") must beLike {
         case Success(Paragraph("text"), _) => true
+      }
+    }
+    "work for expected indent for consecutive lines" in {
+      paragraph(2)("""|line1
+                      |  line2""".stripMargin
+      ) must beLike {
+        case Success(Paragraph("line1 line2"), _) => true
+      }
+    }
+    "stop parsing for different indent for consecutive lines" in {
+      paragraph(2)("""|line1
+                      |   line2
+                      |""".stripMargin
+      ) must beLike {
+        case Success(Paragraph("line1"), _) => true
+      }
+    }
+  }
+
+  "bullet lists" should {
+    "parse items on consecutive lines" in {
+      bulletList(0)("""| * item1
+                       | * item2""".stripMargin
+      ) must beLike {
+        case Success(BulletList(3, List(BulletItem(List(Paragraph("item1"))),
+                                        BulletItem(List(Paragraph("item2"))))), _) => true
+      }
+    }
+
+    "parse items separated by blank lines" in {
+      bulletList(0)("""| * item1
+                       |
+                       | * item2""".stripMargin
+      ) must beLike {
+        case Success(BulletList(3, List(BulletItem(List(Paragraph("item1"))),
+                                        BulletItem(List(Paragraph("item2"))))), _) => true
+      }
+    }
+
+    "parse items of multi-line paragraphs" in {
+      bulletList(0)("""| * line1
+                       |   line2""".stripMargin
+      ) must beLike {
+        case Success(BulletList(3, List(BulletItem(List(Paragraph("line1 line2"))))), _) => true
+      }
+    }
+
+    "parse items with multiple paragraphs" in {
+      bulletList(0)("""| * paragraph 1 line 1
+                       |   paragraph 1 line 2
+                       |
+                       |   paragraph 2""".stripMargin
+      ) must beLike {
+        case Success(BulletList(3, List(BulletItem(List(
+          Paragraph("paragraph 1 line 1 paragraph 1 line 2"),
+          Paragraph("paragraph 2"))))), _) => true
+      }
+    }
+
+    "parse items containing other bullet lists" in {
+      bulletList(0)("""| * - item1
+                       |   - item2""".stripMargin
+      ) must beLike {
+        case Success(BulletList(3, List(BulletItem(List(BulletList(5, List(
+          BulletItem(List(Paragraph("item1"))),
+          BulletItem(List(Paragraph("item2"))))))))), _) => true
+      }
+    }
+
+    "parse items of lists of multiple multi-line paragraphs" in {
+      bulletList(0)("""| * list1 item1
+                       |
+                       |   - list2 item1 paragraph1 line1
+                       |     list2 item1 paragraph1 line2
+                       |
+                       |     list2 item1 paragraph2
+                       |   - list2 item2 paragraph1
+                       |
+                       |   list1 item1 paragraph
+                       |
+                       | * list1 item2""".stripMargin
+      ) must beLike {
+        case Success(
+          BulletList(3, List(
+            BulletItem(List(
+              Paragraph("list1 item1"),
+              BulletList(5, List(
+                BulletItem(List(
+                  Paragraph("list2 item1 paragraph1 line1 list2 item1 paragraph1 line2"),
+                  Paragraph("list2 item1 paragraph2")
+                )),
+                BulletItem(List(
+                  Paragraph("list2 item2 paragraph1")
+                ))
+              )),
+              Paragraph("list1 item1 paragraph")
+            )),
+            BulletItem(List(
+              Paragraph("list1 item2")
+            ))
+          )), _) => true
       }
     }
   }
