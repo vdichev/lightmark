@@ -1,4 +1,4 @@
-package com.blogspot.speakingmylanguage.lightmark
+package lightmark
 
 import org.specs._
 import reStructuredTextParser._

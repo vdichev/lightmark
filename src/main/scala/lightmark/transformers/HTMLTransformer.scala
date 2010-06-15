@@ -1,4 +1,4 @@
-package com.blogspot.speakingmylanguage.lightmark.transformers
+package lightmark.transformers
 
 import scala.xml._
 
