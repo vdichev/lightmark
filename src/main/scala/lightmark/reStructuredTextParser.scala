@@ -137,11 +137,19 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
 
   def block(indent: Int) = bulletList(indent) | paragraph(indent) <~ opt(blankLines)
 
-  // TODO: starting a block
+  /**
+    The inline markup start-string and end-string recognition rules are as follows. If any of the conditions are not met, the start-string or end-string will not be recognized or processed.
+    
+    http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html#inline-markup
+   */
   def inline(s: String)(constructor: String => Inline) =
     accept(s) ~>
+    // Inline markup start-strings must be immediately followed by non-whitespace.
     (not(wsc) ~>
+      // Inline markup end-strings must be immediately preceded by non-whitespace.
       rep1(wsc ~ accept(s) |
+        // Inline markup end-strings must end a text block or be immediately followed by whitespace or one of the following ASCII characters:
+        // ' " ) ] } > - / : . , ; ! ? \
         not(accept(s) ~ postInline) ~
         not(blankLines) ~> anyChar) ) <~
     accept(s) ^^ {
@@ -159,7 +167,7 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   lazy val strong = inline("**") { s => Strong(s) }
   
   lazy val inlineElems = strong | emph
-  
+
   lazy val plainText = rep(not(preInline ~ inlineElems) ~ not(blankLines) ~> anyChar) ~ (preInline | failure("preInline expected")) ^^ {
     case text ~ lastChar => PlainText(text.mkString + lastChar)
   }
