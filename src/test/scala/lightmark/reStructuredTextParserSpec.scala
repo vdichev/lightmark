@@ -203,72 +203,72 @@ class reStructuredTextParserSpec extends Specification {
 
   "bullet lists" should {
     "parse items on consecutive lines" in {
-      bulletList(0)("""| * item1
-                       | * item2""".stripMargin
+      bulletList(0)("""|* item1
+                       |* item2""".stripMargin
       ) must beLike {
-        case Success(BulletList(3, List(BulletItem(List(Paragraph("item1"))),
+        case Success(BulletList(2, List(BulletItem(List(Paragraph("item1"))),
                                         BulletItem(List(Paragraph("item2"))))), _) => true
       }
     }
 
     "parse items separated by blank lines" in {
-      bulletList(0)("""| * item1
+      bulletList(0)("""|* item1
                        |
-                       | * item2""".stripMargin
+                       |* item2""".stripMargin
       ) must beLike {
-        case Success(BulletList(3, List(BulletItem(List(Paragraph("item1"))),
+        case Success(BulletList(2, List(BulletItem(List(Paragraph("item1"))),
                                         BulletItem(List(Paragraph("item2"))))), _) => true
       }
     }
 
     "parse items of multi-line paragraphs" in {
-      bulletList(0)("""| * line1
-                       |   line2""".stripMargin
+      bulletList(0)("""|* line1
+                       |  line2""".stripMargin
       ) must beLike {
-        case Success(BulletList(3, List(BulletItem(List(Paragraph("line1 line2"))))), _) => true
+        case Success(BulletList(2, List(BulletItem(List(Paragraph("line1 line2"))))), _) => true
       }
     }
 
     "parse items with multiple paragraphs" in {
-      bulletList(0)("""| * paragraph 1 line 1
-                       |   paragraph 1 line 2
+      bulletList(0)("""|* paragraph 1 line 1
+                       |  paragraph 1 line 2
                        |
-                       |   paragraph 2""".stripMargin
+                       |  paragraph 2""".stripMargin
       ) must beLike {
-        case Success(BulletList(3, List(BulletItem(List(
+        case Success(BulletList(2, List(BulletItem(List(
           Paragraph("paragraph 1 line 1 paragraph 1 line 2"),
           Paragraph("paragraph 2"))))), _) => true
       }
     }
 
     "parse items containing other bullet lists" in {
-      bulletList(0)("""| * - item1
-                       |   - item2""".stripMargin
+      bulletList(0)("""|* - item1
+                       |  - item2""".stripMargin
       ) must beLike {
-        case Success(BulletList(3, List(BulletItem(List(BulletList(5, List(
+        case Success(BulletList(2, List(BulletItem(List(BulletList(4, List(
           BulletItem(List(Paragraph("item1"))),
           BulletItem(List(Paragraph("item2"))))))))), _) => true
       }
     }
 
     "parse items of lists of multiple multi-line paragraphs" in {
-      bulletList(0)("""| * list1 item1
+      bulletList(0)("""|* list1 item1
                        |
-                       |   - list2 item1 paragraph1 line1
-                       |     list2 item1 paragraph1 line2
+                       |  - list2 item1 paragraph1 line1
+                       |    list2 item1 paragraph1 line2
                        |
-                       |     list2 item1 paragraph2
-                       |   - list2 item2 paragraph1
+                       |    list2 item1 paragraph2
+                       |  - list2 item2 paragraph1
                        |
-                       |   list1 item1 paragraph
+                       |  list1 item1 paragraph
                        |
-                       | * list1 item2""".stripMargin
+                       |* list1 item2""".stripMargin
       ) must beLike {
         case Success(
-          BulletList(3, List(
+          BulletList(2, List(
             BulletItem(List(
               Paragraph("list1 item1"),
-              BulletList(5, List(
+              BulletList(4, List(
                 BulletItem(List(
                   Paragraph("list2 item1 paragraph1 line1 list2 item1 paragraph1 line2"),
                   Paragraph("list2 item1 paragraph2")
@@ -286,4 +286,70 @@ class reStructuredTextParserSpec extends Specification {
       }
     }
   }
+  
+  "inline markup" should {
+    "parse simple emphasis" in {
+      emph("*some text* ") must beLike {
+        case Success(Emph("some text"), _) => true
+      }
+    }
+    
+    "parse combination of emphasis, text and strong emphasis" in {
+      par("*emph* then text and **strong** ") must beLike {
+        case Success(List(
+          Emph("emph"),
+          PlainText(" then text and "),
+          Strong("strong"),
+          PlainText(" ")
+        ), _) => true
+      }
+    }
+    
+    "parse text with a single asterisk as plain text" in {
+      par("an * asterisk ") must beLike {
+        case Success(List(PlainText("an * asterisk ")), _) => true
+      }
+    }
+    
+    "parse text with no asterisks as plain text" in {
+      plainText("plain text ") must beLike {
+        case Success(PlainText("plain text "), _) => true
+      }
+    }
+    
+    "start-strings must not be preceded by a word character" in {
+      par("a*emph* ") must beLike {
+        case Success(List(PlainText("a*emph* ")), _) => true
+      }
+    }
+    
+    "start-strings must not be followed by whitespace" in {
+      par("a * text* ") must beLike {
+        case Success(List(PlainText("a * text* ")), _) => true
+      }
+    }
+    
+    "end-strings must not be preceded by whitespace" in {
+      par("*text * ") must beLike {
+        case Success(List(PlainText("*text * ")), _) => true
+      }
+    }
+    
+    "there can be an asterisk inside an emphasis" in {
+      par("*begin * end* ") must beLike {
+        case Success(List(
+          Emph("begin * end"),
+          PlainText(" ")
+        ), _) => true
+      }
+    }
+    
+    "end-strings must not be followed by a word character" in {
+      par("*emph*x ") must beLike {
+        case Success(List(PlainText("*emph*x ")), _) => true
+      }
+    }
+    
+  }
 }
+
