@@ -44,7 +44,7 @@ class reStructuredTextParser {
 object reStructuredTextParser extends Parsers with ImplicitConversions {
 
   implicit def strToInput(in: String): Input = new CharArrayReader(in.toCharArray)
-  implicit def str2chars(s: String): List[Char] = stringWrapper(s).toList
+  implicit def str2chars(s: String): List[Char] = augmentString(s).toList
 
   type Elem = Char
 

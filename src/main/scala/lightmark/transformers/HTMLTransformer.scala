@@ -1,6 +1,7 @@
 package lightmark.transformers
 
 import scala.xml._
+import lightmark._
 
 object HTMLTransformer {
   def convert(rst: reStructuredText): NodeSeq = {
