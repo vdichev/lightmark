@@ -1,5 +1,7 @@
 package lightmark.transformers
 
+import lightmark._
+
 import scala.xml._
 import org.specs._
 import HTMLTransformer._

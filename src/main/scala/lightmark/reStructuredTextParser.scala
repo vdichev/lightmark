@@ -7,18 +7,16 @@ import _root_.scala.collection.mutable.HashMap
 
 import java.util.regex.Pattern
 
-import scala.collection.immutable.Stack
-
 class reStructuredTextParser {
   import reStructuredTextParser._
 
   // A structure indicating which character underlines each section level
-  var headingLevels: Stack[Char] = Stack.Empty
+  var headingLevels = List.empty[Char]
 
   def getLevel(c: Char): Int = {
     if (!(headingLevels contains c))
-      headingLevels = headingLevels push c
-    return (headingLevels findIndexOf { c == _ }) + 1
+      headingLevels :+= c
+    (headingLevels findIndexOf { c == _ }) + 1
   }
 
   lazy val title: Parser[reStructuredText] = overlineTitle | underlineTitle
