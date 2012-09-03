@@ -163,8 +163,10 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   lazy val emph = inline("*") { s => Emph(s) }
   
   lazy val strong = inline("**") { s => Strong(s) }
-  
-  lazy val inlineElems = strong | emph
+
+  lazy val literal = inline("``") { s => Literal(s) }
+
+  lazy val inlineElems = strong | emph | literal
 
   lazy val plainText = rep(not(preInline ~ inlineElems) ~ not(blankLines) ~> anyChar) ~ (preInline | failure("preInline expected")) ^^ {
     case text ~ lastChar => PlainText(text.mkString + lastChar)
@@ -199,3 +201,5 @@ case class PlainText(override val content: String) extends Inline(content)
 case class Emph(override val content: String) extends Inline(content)
 
 case class Strong(override val content: String) extends Inline(content)
+
+case class Literal(override val content: String) extends Inline(content)
