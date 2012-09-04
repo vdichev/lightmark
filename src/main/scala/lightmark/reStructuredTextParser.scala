@@ -58,13 +58,7 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
 
   // A parser which captures the first element and matches repetitions
   // of the same character
-  def repFirst(p: Parser[Elem]): Parser[List[Elem]] = Parser { in =>
-    p(in) match {
-      case s @ Success(v, _) => rep(v)(in)
-      case e @ Error(msg, _) => Error(msg, in)
-      case f @ Failure(msg, _) => Failure(msg, in)
-    }
-  }
+  def repFirst(p: Parser[Elem]): Parser[List[Elem]] = guard(p) >> (v => rep(v))
 
   lazy val punctuation = elem('!') | '"' | '#' | '$' | '%' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~'
 
@@ -124,13 +118,8 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
         BulletList(indent + 1 + bodyIndent, item1 :: items)
     }
 
-  def bulletList(indent: Int): Parser[BulletList] = Parser { in =>
-    bulletLead(in) match {
-      case s @ Success(v, _) =>
-        fixedIndentBulletList(indent, v.c, v.bodyIndent)(in)
-      case e @ Error(msg, _) => Error(msg, in)
-      case f @ Failure(msg, _) => Failure(msg, in)
-    }
+  def bulletList(indent: Int): Parser[BulletList] = guard(bulletLead) >> { v =>
+    fixedIndentBulletList(indent, v.c, v.bodyIndent)
   }
 
   def block(indent: Int) = bulletList(indent) | paragraph(indent) <~ opt(blankLines)
