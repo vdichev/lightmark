@@ -37,6 +37,8 @@ class reStructuredTextParser {
   }
 
   lazy val rst = (title | block(0))*
+
+  def parse(string: String) = rst(string)
 }
 
 object reStructuredTextParser extends Parsers with ImplicitConversions {
@@ -180,6 +182,17 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   
   lazy val par = rep1(inlineElems | plainText)
 
+  def main(args: Array[String]) {
+    import io.Source
+    val contents = Source.fromFile(args.head).getLines.mkString("\n")
+    val rst = new reStructuredTextParser().parse(contents)
+    rst match {
+      case Success(result, _) =>
+        val html = transformers.HTMLTransformer.convert(result)
+
+        print(html)
+    }
+  }
 }
 
 abstract class reStructuredText
