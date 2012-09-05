@@ -92,11 +92,27 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
 
   lazy val EOF = accept('\032')
 
+  lazy val spaceEOF = rep(wsc) ~ EOF
+
   lazy val line = not(wsc) ~> rep1(not(newline) ~> anyChar) <~ newlineOrEOF
 
   def paragraph(indent: Int) = line ~ rep( repN(indent, ' ') ~> line) ^^ {
-    case line1 ~ lines => Paragraph((line1 :: lines).map{_.mkString}.mkString(" "))
+    case line1 ~ lines =>
+      val text = (line1 :: lines).map(_.mkString).mkString(" ")
+      Paragraph(text)
   }
+
+  def resetInputForResult[T](result: ParseResult[T]) = Parser { in =>
+    result match {
+      case Success(res, _) => Success(res, in)
+      case noSuccess => noSuccess
+    }
+  }
+
+  def formattedParagraph(indent: Int): Parser[FormattedParagraph] =
+    for (p <- paragraph(indent);
+         inline <- resetInputForResult(par(p.text + "\n"))
+    ) yield FormattedParagraph(inline)
 
   lazy val bulletLead: Parser[Bullet] = bullet ~ rep1(space)^^ {
     case bulletChar ~ bodyIndent =>
@@ -122,7 +138,7 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     fixedIndentBulletList(indent, v.c, v.bodyIndent)
   }
 
-  def block(indent: Int) = bulletList(indent) | paragraph(indent) <~ opt(blankLines)
+  def block(indent: Int) = bulletList(indent) | formattedParagraph(indent) <~ opt(blankLines)
 
   /**
     The inline markup start-string and end-string recognition rules are as follows. If any of the conditions are not met, the start-string or end-string will not be recognized or processed.
@@ -137,8 +153,7 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
       rep1(wsc ~ accept(s) |
         // Inline markup end-strings must end a text block or be immediately followed by whitespace or one of the following ASCII characters:
         // ' " ) ] } > - / : . , ; ! ? \
-        not(accept(s) ~ postInline) ~
-        not(blankLines) ~> anyChar) ) <~
+        not(accept(s) ~ postInline) ~> anyChar) ) <~
     accept(s) ^^ {
     case text =>
       val textString = text.foldLeft ("") { case (s, p) => p match {
@@ -157,8 +172,10 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
 
   lazy val inlineElems = strong | emph | literal
 
-  lazy val plainText = rep(not(preInline ~ inlineElems) ~ not(blankLines) ~> anyChar) ~ (preInline | failure("preInline expected")) ^^ {
-    case text ~ lastChar => PlainText(text.mkString + lastChar)
+  lazy val plainText = rep(not(preInline ~ inlineElems) ~ not(spaceEOF) ~> anyChar) ~ (preInline | failure("preInline expected")) ^^ {
+    case text ~ lastChar if lastChar.toString != "\n" =>
+      PlainText(text.mkString + lastChar)
+    case text ~ _ => PlainText(text.mkString)
   }
   
   lazy val par = rep1(inlineElems | plainText)
@@ -178,6 +195,8 @@ case class Separator(c: Char, length: Int) extends Raw
 case class Section(title: String, level: Int) extends Block
 
 case class Paragraph(text: String) extends Block
+
+case class FormattedParagraph(inline: List[Inline]) extends Block
 
 case class Bullet(c: Char, bodyIndent: Int) extends Raw
 

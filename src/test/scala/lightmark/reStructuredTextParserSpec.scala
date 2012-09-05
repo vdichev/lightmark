@@ -135,9 +135,10 @@ class reStructuredTextParserSpec extends Specification {
              |
              |""".stripMargin
       ) must beLike {
-        case Success(List(Section("test", 1),
-                          Paragraph("text"),
-                          Paragraph("more text")), _) => true
+        case Success(List(
+          Section("test", 1),
+          FormattedParagraph(List(PlainText("text"))),
+          FormattedParagraph(List(PlainText("more text")))), _) => true
       }
     }
     "match multiple sections with paragraphs" in {
@@ -157,13 +158,14 @@ class reStructuredTextParserSpec extends Specification {
              |====
              |another level 1 section""".stripMargin
       ) must beLike {
-        case Success(List(Section("sec1", 1),
-                          Paragraph("text"),
-                          Paragraph("more text"),
-                          Section("sec2", 2),
-                          Paragraph("subsection text"),
-                          Section("sec3", 1),
-                          Paragraph("another level 1 section")), _) => true
+        case Success(List(
+          Section("sec1", 1),
+          FormattedParagraph(List(PlainText("text"))),
+          FormattedParagraph(List(PlainText("more text"))),
+          Section("sec2", 2),
+          FormattedParagraph(List(PlainText("subsection text"))),
+          Section("sec3", 1),
+          FormattedParagraph(List(PlainText("another level 1 section")))), _) => true
       }
     }
   }
@@ -206,8 +208,9 @@ class reStructuredTextParserSpec extends Specification {
       bulletList(0)("""|* item1
                        |* item2""".stripMargin
       ) must beLike {
-        case Success(BulletList(2, List(BulletItem(List(Paragraph("item1"))),
-                                        BulletItem(List(Paragraph("item2"))))), _) => true
+        case Success(BulletList(2, List(
+          BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
+          BulletItem(List(FormattedParagraph(List(PlainText("item2"))))))), _) => true
       }
     }
 
@@ -216,8 +219,9 @@ class reStructuredTextParserSpec extends Specification {
                        |
                        |* item2""".stripMargin
       ) must beLike {
-        case Success(BulletList(2, List(BulletItem(List(Paragraph("item1"))),
-                                        BulletItem(List(Paragraph("item2"))))), _) => true
+        case Success(BulletList(2, List(
+          BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
+          BulletItem(List(FormattedParagraph(List(PlainText("item2"))))))), _) => true
       }
     }
 
@@ -225,7 +229,8 @@ class reStructuredTextParserSpec extends Specification {
       bulletList(0)("""|* line1
                        |  line2""".stripMargin
       ) must beLike {
-        case Success(BulletList(2, List(BulletItem(List(Paragraph("line1 line2"))))), _) => true
+        case Success(BulletList(2, List(
+          BulletItem(List(FormattedParagraph(List(PlainText("line1 line2"))))))), _) => true
       }
     }
 
@@ -236,8 +241,8 @@ class reStructuredTextParserSpec extends Specification {
                        |  paragraph 2""".stripMargin
       ) must beLike {
         case Success(BulletList(2, List(BulletItem(List(
-          Paragraph("paragraph 1 line 1 paragraph 1 line 2"),
-          Paragraph("paragraph 2"))))), _) => true
+          FormattedParagraph(List(PlainText("paragraph 1 line 1 paragraph 1 line 2"))),
+          FormattedParagraph(List(PlainText("paragraph 2"))))))), _) => true
       }
     }
 
@@ -246,8 +251,8 @@ class reStructuredTextParserSpec extends Specification {
                        |  - item2""".stripMargin
       ) must beLike {
         case Success(BulletList(2, List(BulletItem(List(BulletList(4, List(
-          BulletItem(List(Paragraph("item1"))),
-          BulletItem(List(Paragraph("item2"))))))))), _) => true
+          BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
+          BulletItem(List(FormattedParagraph(List(PlainText("item2"))))))))))), _) => true
       }
     }
 
@@ -267,20 +272,20 @@ class reStructuredTextParserSpec extends Specification {
         case Success(
           BulletList(2, List(
             BulletItem(List(
-              Paragraph("list1 item1"),
+              FormattedParagraph(List(PlainText("list1 item1"))),
               BulletList(4, List(
                 BulletItem(List(
-                  Paragraph("list2 item1 paragraph1 line1 list2 item1 paragraph1 line2"),
-                  Paragraph("list2 item1 paragraph2")
+                  FormattedParagraph(List(PlainText("list2 item1 paragraph1 line1 list2 item1 paragraph1 line2"))),
+                  FormattedParagraph(List(PlainText("list2 item1 paragraph2")))
                 )),
                 BulletItem(List(
-                  Paragraph("list2 item2 paragraph1")
+                  FormattedParagraph(List(PlainText("list2 item2 paragraph1")))
                 ))
               )),
-              Paragraph("list1 item1 paragraph")
+              FormattedParagraph(List(PlainText("list1 item1 paragraph")))
             )),
             BulletItem(List(
-              Paragraph("list1 item2")
+              FormattedParagraph(List(PlainText("list1 item2")))
             ))
           )), _) => true
       }
