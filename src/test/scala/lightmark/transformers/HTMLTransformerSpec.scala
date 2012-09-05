@@ -20,6 +20,21 @@ class HTMLTransformerSpec extends Specification {
     "convert a paragraph in p tag" in {
       convert(Paragraph("para text")) must beEqualTo(<p>para text</p>)
     }
+    "convert Emph to em tag" in {
+      convert(Emph("emphasized text")) must beEqualTo(<em>emphasized text</em>)
+    }
+    "convert Strong to strong tag" in {
+      convert(Strong("strong text")) must beEqualTo(<strong>strong text</strong>)
+    }
+    "convert Literal to tt tag" in {
+      convert(Literal("literal text")) must beEqualTo(<tt>literal text</tt>)
+    }
+    "convert bullet list to ul and li tags" in {
+      val bulletList = BulletList(2, List(
+        BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
+        BulletItem(List(FormattedParagraph(List(PlainText("item2")))))))
+      convert(bulletList) must ==/(<ul><li><p>item1</p></li><li><p>item2</p></li></ul>)
+    }
   }
 }
 

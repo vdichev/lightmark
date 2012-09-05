@@ -6,8 +6,15 @@ import lightmark._
 object HTMLTransformer {
   def convert(rst: reStructuredText): NodeSeq = {
     rst match {
-      case s: Section => Elem(null, "h" + s.level, Null, TopScope, Text(s.title))
-      case p: Paragraph => <p>{p.text}</p>
+      case Section(title, level) => Elem(null, "h" + level, Null, TopScope, Text(title))
+      case Paragraph(text) => <p>{text}</p>
+      case FormattedParagraph(inlines) => <p>{inlines map convert}</p>
+      case PlainText(content) => Text(content)
+      case BulletList(_, items) => <ul>{items map convert}</ul>
+      case BulletItem(content) => <li>{content map convert}</li>
+      case Emph(content) => <em>{content}</em>
+      case Strong(content) => <strong>{content}</strong>
+      case Literal(content) => <tt>{content}</tt>
     }
   }
   
