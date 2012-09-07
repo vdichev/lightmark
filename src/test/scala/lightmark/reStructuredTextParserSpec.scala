@@ -354,7 +354,37 @@ class reStructuredTextParserSpec extends Specification {
         case Success(List(PlainText("*emph*x ")), _) => true
       }
     }
-    
+  }
+
+  "escapes" should {
+    val format = formattedParagraph(0)
+    "escaped start-string shouldn't start inline" in {
+      format("""\*emph*""").get must be_==(FormattedParagraph(List(
+        PlainText("*emph*"))))
+    }
+
+    "escaped end-string shouldn't end inline" in {
+      format("""*emph\* end*""").get must be_==(FormattedParagraph(List(
+        Emph("emph* end"),
+        PlainText(""))))
+    }
+
+    "escape after end-string shouldn't end inline" in {
+      format("""*emph*\s""").get must be_==(FormattedParagraph(List(
+        Emph("emph"),
+        PlainText("s"))))
+    }
+
+    "escaped backslash shouldn't escape start-string" in {
+      format("""\\*emph*""").get must be_==(FormattedParagraph(List(
+        PlainText("""\*emph*"""))))
+    }
+
+    "escaped backslash shouldn't escape end-string" in {
+      format("""*emph\\*""").get must be_==(FormattedParagraph(List(
+        Emph("""emph\"""),
+        PlainText(""))))
+    }
   }
 }
 

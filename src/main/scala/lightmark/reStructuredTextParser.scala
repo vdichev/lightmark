@@ -71,7 +71,7 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     '‘' | '“' | '’' | '«' | '¡' | '¿' | wsc | delim
     
   lazy val postInline = elem('\'') | '"' | ')' | ']' | '}' | '>' | '-' | '/' | ':' |
-    '.' | ',' | ';' | '!' | '?' | '\\' | '’' | '”' | '»' | wsc | delim
+    '.' | ',' | ';' | '!' | '?' | '\\' | '’' | '”' | '»' | wsc | delim | '\000'
 
   lazy val bullet: Parser[Elem] = elem('*') | '+' | '-' | '•' | '‣' | '⁃'
 
@@ -101,7 +101,8 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   def paragraph(indent: Int) = line ~ rep( repN(indent, ' ') ~> line) ^^ {
     case line1 ~ lines =>
       val text = (line1 :: lines).map(_.mkString).mkString(" ")
-      Paragraph(text)
+      val escaped = text.replaceAll("""\\(.)""", "\000$1")
+      Paragraph(escaped)
   }
 
   def resetInputForResult[T](result: ParseResult[T]) = Parser { in =>
@@ -152,7 +153,7 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     // Inline markup start-strings must be immediately followed by non-whitespace.
     (not(wsc) ~>
       // Inline markup end-strings must be immediately preceded by non-whitespace.
-      rep1(wsc ~ accept(s) |
+      rep1((wsc | '\000') ~ accept(s) |
         // Inline markup end-strings must end a text block or be immediately followed by whitespace or one of the following ASCII characters:
         // ' " ) ] } > - / : . , ; ! ? \
         not(accept(s) ~ postInline) ~> anyChar) ) <~
@@ -163,7 +164,8 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
           case c => s + c
         }
       }
-      constructor(textString)
+      val unescaped = textString.replaceAll("\000", "")
+      constructor(unescaped)
   }
 
   lazy val emph = inline("*") { s => Emph(s) }
@@ -175,9 +177,11 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   lazy val inlineElems = strong | emph | literal
 
   lazy val plainText = rep(not(preInline ~ inlineElems) ~ not(spaceEOF) ~> anyChar) ~ (preInline | failure("preInline expected")) ^^ {
-    case text ~ lastChar if lastChar.toString != "\n" =>
-      PlainText(text.mkString + lastChar)
-    case text ~ _ => PlainText(text.mkString)
+    case text ~ lastChar =>
+      val last = lastChar.toString
+      val textString = text.mkString + (if (last == "\n" ) "" else last)
+      val unescaped = textString.replaceAll("\000", "")
+      PlainText(unescaped)
   }
   
   lazy val par = rep1(inlineElems | plainText)
