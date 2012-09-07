@@ -15,6 +15,7 @@ object HTMLTransformer {
       case Emph(content) => <em>{content}</em>
       case Strong(content) => <strong>{content}</strong>
       case Literal(content) => <tt>{content}</tt>
+      case Quote(content) => <blockquote>{content map convert}</blockquote>
     }
   }
   

@@ -35,6 +35,10 @@ class HTMLTransformerSpec extends Specification {
         BulletItem(List(FormattedParagraph(List(PlainText("item2")))))))
       convert(bulletList) must ==/(<ul><li><p>item1</p></li><li><p>item2</p></li></ul>)
     }
+    "convert block quotes to blockquote tag" in {
+      convert(Quote(List(FormattedParagraph(List(PlainText("hey")))))) must ==/(
+        <blockquote><p>hey</p></blockquote>)
+    }
   }
 }
 
