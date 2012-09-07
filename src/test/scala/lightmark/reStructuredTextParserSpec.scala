@@ -335,5 +335,37 @@ class reStructuredTextParserSpec extends Specification {
         PlainText(""))))
     }
   }
+
+  "block quotes" should {
+    "parse simple indented block" in {
+      (block(0)*)("""|text
+                     |
+                     |  quoted block""".stripMargin
+      ).get must beEqualTo(List(
+        FormattedParagraph(List(PlainText("text"))),
+        Quote(List(FormattedParagraph(List(PlainText("quoted block")))))))
+    }
+
+    "parse indented block with inline formatting" in {
+      (block(0)*)("""|text
+                     |
+                     |  block *with inline* formatting""".stripMargin
+      ).get must beEqualTo(List(
+        FormattedParagraph(List(PlainText("text"))),
+        Quote(List(FormattedParagraph(List(PlainText("block "), Emph("with inline"), PlainText(" formatting")))))))
+    }
+
+    "parse indented bullet list" in {
+      (block(0)*)("""|text
+                     |
+                     |  * item1
+                     |  * item2""".stripMargin
+      ).get must beEqualTo(List(
+        FormattedParagraph(List(PlainText("text"))),
+        Quote(List(BulletList(4, List(
+          BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
+          BulletItem(List(FormattedParagraph(List(PlainText("item2")))))))))))
+    }
+  }
 }
 

@@ -141,7 +141,11 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     fixedIndentBulletList(indent, v.c, v.bodyIndent)
   }
 
-  def block(indent: Int) = bulletList(indent) | formattedParagraph(indent) <~ opt(blankLines)
+  def block(indent: Int): Parser[Block] = (
+    bulletList(indent) |
+    formattedParagraph(indent) |
+    quote(indent)
+  ) <~ opt(blankLines)
 
   /**
     The inline markup start-string and end-string recognition rules are as follows. If any of the conditions are not met, the start-string or end-string will not be recognized or processed.
@@ -185,6 +189,11 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   }
   
   lazy val par = rep1(inlineElems | plainText)
+
+  def quote(indent: Int) =
+    for (blockIndent <- rep1(' ');
+         blocks <- block(indent + blockIndent.length)+
+    ) yield Quote(blocks)
 
   lazy val tabSpaces = " " * 8
 
@@ -234,3 +243,5 @@ case class Emph(override val content: String) extends Inline(content)
 case class Strong(override val content: String) extends Inline(content)
 
 case class Literal(override val content: String) extends Inline(content)
+
+case class Quote(items: List[Block]) extends Block
