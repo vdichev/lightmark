@@ -38,7 +38,7 @@ class reStructuredTextParser {
 
   lazy val rst = (title | block(0))*
 
-  def parse(string: String) = rst(string)
+  def parse(string: String) = rst(stripTrailing(expandTabs(string)))
 }
 
 object reStructuredTextParser extends Parsers with ImplicitConversions {
@@ -185,6 +185,12 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   }
   
   lazy val par = rep1(inlineElems | plainText)
+
+  lazy val tabSpaces = " " * 8
+
+  def expandTabs(s: String) = s.replaceAll("\t", tabSpaces)
+
+  def stripTrailing(s: String) = s.replaceAll("(?m) +$", "")
 
   def main(args: Array[String]) {
     import io.Source
