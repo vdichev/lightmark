@@ -13,12 +13,12 @@ The following elements are supported:
 * emphasis, strong, inline literals
 * escapes of inline markup
 * block quotes
+* literal blocks
 
 TODO
 ====
 
 * comments
-* literal blocks
 * substitutions
 * enumerated lists
 * definition lists

@@ -7,8 +7,8 @@ object HTMLTransformer {
   def convert(rst: reStructuredText): NodeSeq = {
     rst match {
       case Section(title, level) => Elem(null, "h" + level, Null, TopScope, Text(title))
-      case Paragraph(text) => <p>{text}</p>
-      case FormattedParagraph(inlines) => <p>{inlines map convert}</p>
+      case FormattedParagraph(inlines, literal) =>
+        <p>{inlines map convert}</p> ++ (literal map (pre => <pre>{pre}</pre>))
       case PlainText(content) => Text(content)
       case BulletList(_, items) => <ul>{items map convert}</ul>
       case BulletItem(content) => <li>{content map convert}</li>

@@ -98,11 +98,22 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
 
   lazy val line = not(wsc) ~> rep1(not(newline) ~> anyChar) <~ newlineOrEOF
 
+  lazy val literalNext = """ *(?<!\000)::$""".r
+
   def paragraph(indent: Int) = line ~ rep( repN(indent, ' ') ~> line) ^^ {
     case line1 ~ lines =>
       val text = (line1 :: lines).map(_.mkString).mkString(" ")
-      val escaped = text.replaceAll("""\\(.)""", "\000$1")
-      Paragraph(escaped)
+      val escaped: String = text.replaceAll("""\\(.)""", "\000$1")
+      val literal = literalNext findFirstIn escaped
+      val trimmed = literal map { l =>
+        if (l == escaped)
+          ""
+        else if (l.length == 2)
+          escaped.substring(0, escaped.length - 1)
+        else
+          escaped.substring(0, escaped.length - l.length)
+      } getOrElse escaped
+      Paragraph(trimmed, literal.isDefined)
   }
 
   def resetInputForResult[T](result: ParseResult[T]) = Parser { in =>
@@ -112,10 +123,29 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     }
   }
 
+  def literalBlock(literalNext: Boolean, indent: Int): Parser[Option[String]] =
+    if (literalNext)
+      blankLines ~>
+      rep(repN(indent, ' ') ~ ' ' ~> rep1(not(newline) ~> anyChar) <~ newlineOrEOF |
+          rep(' ') <~ newline) ^^ {
+        case linesResult =>
+          // shadow implicit to avoid ambiguity with augmentString
+          val str2chars, strToInput = Unit
+          val lines = linesResult map (_.mkString)
+          val trimmed = lines.reverse.dropWhile(_.isEmpty).reverse
+          val nonBlank = lines filterNot (_.isEmpty)
+          val minIndent = nonBlank map (_.takeWhile(' ' ==).length) min
+          val pre = Some(trimmed map (_.drop(minIndent)) mkString ("\n"))
+          pre filterNot (_.isEmpty)
+      }
+    else
+      success(None)
+
   def formattedParagraph(indent: Int): Parser[FormattedParagraph] =
     for (p <- paragraph(indent);
-         inline <- resetInputForResult(par(p.text + "\n"))
-    ) yield FormattedParagraph(inline)
+         inline <- resetInputForResult(par(p.text + "\n"));
+         pre <- literalBlock(p.literalNext, indent)
+    ) yield FormattedParagraph(inline, pre)
 
   lazy val bulletLead: Parser[Bullet] = bullet ~ rep1(space)^^ {
     case bulletChar ~ bodyIndent =>
@@ -176,9 +206,9 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   
   lazy val strong = inline("**") { s => Strong(s) }
 
-  lazy val literal = inline("``") { s => Literal(s) }
+  lazy val inlineLiteral = inline("``") { s => Literal(s) }
 
-  lazy val inlineElems = strong | emph | literal
+  lazy val inlineElems = strong | emph | inlineLiteral
 
   lazy val plainText = rep(not(preInline ~ inlineElems) ~ not(spaceEOF) ~> anyChar) ~ (preInline | failure("preInline expected")) ^^ {
     case text ~ lastChar =>
@@ -188,7 +218,9 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
       PlainText(unescaped)
   }
   
-  lazy val par = rep1(inlineElems | plainText)
+  lazy val par = rep1(inlineElems | plainText) ^^ {
+    _.filterNot(PlainText("")==)
+  }
 
   def quote(indent: Int) =
     for (blockIndent <- rep1(' ');
@@ -226,9 +258,9 @@ case class Separator(c: Char, length: Int) extends Raw
 
 case class Section(title: String, level: Int) extends Block
 
-case class Paragraph(text: String) extends Block
+case class Paragraph(text: String, literalNext: Boolean = false) extends Block
 
-case class FormattedParagraph(inline: List[Inline]) extends Block
+case class FormattedParagraph(inline: List[Inline], literalBlock: Option[String] = None) extends Block
 
 case class Bullet(c: Char, bodyIndent: Int) extends Raw
 

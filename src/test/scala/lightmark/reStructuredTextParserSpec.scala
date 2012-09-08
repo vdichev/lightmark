@@ -314,8 +314,7 @@ class reStructuredTextParserSpec extends Specification {
 
     "escaped end-string shouldn't end inline" in {
       format("""*emph\* end*""").get must beEqualTo(FormattedParagraph(List(
-        Emph("emph* end"),
-        PlainText(""))))
+        Emph("emph* end"))))
     }
 
     "escape after end-string shouldn't end inline" in {
@@ -331,8 +330,7 @@ class reStructuredTextParserSpec extends Specification {
 
     "escaped backslash shouldn't escape end-string" in {
       format("""*emph\\*""").get must beEqualTo(FormattedParagraph(List(
-        Emph("""emph\"""),
-        PlainText(""))))
+        Emph("""emph\"""))))
     }
   }
 
@@ -365,6 +363,62 @@ class reStructuredTextParserSpec extends Specification {
         Quote(List(BulletList(4, List(
           BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
           BulletItem(List(FormattedParagraph(List(PlainText("item2")))))))))))
+    }
+  }
+
+  "literal blocks" should {
+    "parse literal block after text with colons" in {
+      formattedParagraph(0)(
+        """|text::
+           |
+           |  literal""".stripMargin
+      ).get must beEqualTo(FormattedParagraph(List(PlainText("text:")), Some("literal")))
+    }
+
+    "parse literal block after text with space before colons" in {
+      formattedParagraph(0)(
+        """|text ::
+           |
+           |  literal""".stripMargin
+      ).get must beEqualTo(FormattedParagraph(List(PlainText("text")), Some("literal")))
+    }
+
+    "drop empty block with colons" in {
+      formattedParagraph(0)(
+        """|::
+           |
+           |  literal""".stripMargin
+      ).get must beEqualTo(FormattedParagraph(Nil, Some("literal")))
+    }
+
+    "parse literal block with blank lines" in {
+      formattedParagraph(0)(
+        """|::
+           |
+           |  literal1
+           |
+           |  literal2""".stripMargin
+      ).get must beEqualTo(FormattedParagraph(Nil, Some("literal1\n\nliteral2")))
+    }
+
+    "find minimum indent" in {
+      formattedParagraph(0)(
+        """|::
+           |
+           |    literal1
+           |  literal2""".stripMargin
+      ).get must beEqualTo(FormattedParagraph(Nil, Some("  literal1\nliteral2")))
+    }
+
+    "ignore blank lines before next paragraph" in {
+      formattedParagraph(0)(
+        """|::
+           |
+           |  literal1
+           |
+           |
+           |next""".stripMargin
+      ).get must beEqualTo(FormattedParagraph(Nil, Some("literal1")))
     }
   }
 }
