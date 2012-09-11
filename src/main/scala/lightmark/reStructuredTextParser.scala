@@ -235,13 +235,22 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
 
   def main(args: Array[String]) {
     import io.Source
-    val contents = Source.fromFile(args.head).getLines.mkString("\n")
+    val in = if (args.length >= 1)
+      Source.fromFile(args.head)
+    else
+      Source.fromInputStream(System.in)
+    val out: { def print(o: AnyRef); def close() } = if (args.length >= 2)
+      new java.io.PrintWriter(args(1))
+    else
+      System.out
+    val contents = in.getLines.mkString("\n")
     val rst = new reStructuredTextParser().parse(contents)
     rst match {
       case Success(result, _) =>
         val html = transformers.HTMLTransformer.convert(result)
 
-        print(html)
+        out.print(html)
+        out.close()
     }
   }
 }
