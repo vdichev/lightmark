@@ -10,6 +10,7 @@ The following elements are supported:
 * sections
 * paragraphs
 * bullet lists
+* definition lists
 * emphasis, strong, inline literals
 * escapes of inline markup
 * block quotes
@@ -34,7 +35,6 @@ TODO
 * comments
 * substitutions
 * enumerated lists
-* definition lists
 * field lists
 * tables
 * hyperlinks

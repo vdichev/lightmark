@@ -36,6 +36,13 @@ class HTMLTransformerSpec extends Specification {
       convert(Quote(List(FormattedParagraph(List(PlainText("hey")))))) must ==/(
         <blockquote><p>hey</p></blockquote>)
     }
+    "convert definition list to dl, dt, dd tags" in {
+      val dl = DefinitionList(List(DefinitionItem(
+        List(PlainText("term")),
+        List(FormattedParagraph(List(PlainText("definition"))))
+      )))
+      convert(dl) must ==/(<dl><dt>term</dt><dd><p>definition</p></dd></dl>)
+    }
   }
 }
 

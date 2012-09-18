@@ -171,8 +171,19 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     fixedIndentBulletList(indent, v.c, v.bodyIndent)
   }
 
+  def definitionList(indent: Int) =
+    rep1(definitionItem(indent)) ^^ DefinitionList
+
+  def definitionItem(indent: Int): Parser[DefinitionItem] =
+    for (
+      term <- repN(indent, ' ') ~> line;
+      inline <- resetInputForResult(par(term.mkString + "\n"));
+      definition <- indented(indent)
+    ) yield DefinitionItem(inline, definition)
+
   def block(indent: Int): Parser[Block] = (
     bulletList(indent) |
+    definitionList(indent) |
     formattedParagraph(indent) |
     quote(indent)
   ) <~ opt(blankLines)
@@ -222,10 +233,14 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
     _.filterNot(PlainText("")==)
   }
 
-  def quote(indent: Int) =
+  def quote(indent: Int) = indented(indent) ^^ Quote
+
+  def indented(indent: Int) =
     for (blockIndent <- rep1(' ');
-         blocks <- block(indent + blockIndent.length)+
-    ) yield Quote(blocks)
+         val newIndent = indent + blockIndent.length;
+         firstBlock <- block(newIndent);
+         blocks <- rep(repN(newIndent, ' ') ~> block(newIndent))
+    ) yield firstBlock :: blocks
 
   lazy val tabSpaces = " " * 8
 
@@ -276,6 +291,10 @@ case class Bullet(c: Char, bodyIndent: Int) extends Raw
 case class BulletItem(content: List[Block]) extends Block
 
 case class BulletList(level: Int, items: List[BulletItem]) extends Block
+
+case class DefinitionItem(term: List[Inline], definition: List[Block]) extends Block
+
+case class DefinitionList(items: List[DefinitionItem]) extends Block
 
 case class PlainText(override val content: String) extends Inline(content)
 

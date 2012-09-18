@@ -16,6 +16,9 @@ object HTMLTransformer {
       case Strong(content) => <strong>{content}</strong>
       case Literal(content) => <tt>{content}</tt>
       case Quote(content) => <blockquote>{content map convert}</blockquote>
+      case DefinitionList(items) => <dl>{items map convert}</dl>
+      case DefinitionItem(term, definition) =>
+        <dt>{term map convert}</dt><dd>{definition map convert}</dd>
     }
   }
   

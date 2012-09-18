@@ -421,5 +421,41 @@ class reStructuredTextParserSpec extends Specification {
       ).get must beEqualTo(FormattedParagraph(Nil, Some("literal1")))
     }
   }
+
+  "definition lists" should {
+    "parse simple term and definition" in {
+      block(0)("""|term
+                  |  definition""".stripMargin
+      ).get must beEqualTo(DefinitionList(List(DefinitionItem(
+        List(PlainText("term")),
+        List(FormattedParagraph(List(PlainText("definition"))))
+      ))))
+    }
+
+    "parse term and definition with multiple paragraphs" in {
+      block(0)("""|term
+                  |  paragraph1
+                  |
+                  |  paragraph2""".stripMargin
+      ).get must beEqualTo(DefinitionList(List(DefinitionItem(
+        List(PlainText("term")),
+        List(FormattedParagraph(List(PlainText("paragraph1"))),
+             FormattedParagraph(List(PlainText("paragraph2"))))
+      ))))
+    }
+
+    "parse term and definition with bullet list" in {
+      block(0)("""|term
+                  |  * item1
+                  |  * item2""".stripMargin
+      ).get must beEqualTo(DefinitionList(List(DefinitionItem(
+        List(PlainText("term")),
+        List(BulletList(4, List(
+          BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
+          BulletItem(List(FormattedParagraph(List(PlainText("item2")))))
+        )))
+      ))))
+    }
+  }
 }
 
