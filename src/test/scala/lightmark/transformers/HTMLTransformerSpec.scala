@@ -39,6 +39,7 @@ class HTMLTransformerSpec extends Specification {
     "convert definition list to dl, dt, dd tags" in {
       val dl = DefinitionList(List(DefinitionItem(
         List(PlainText("term")),
+        Nil,
         List(FormattedParagraph(List(PlainText("definition"))))
       )))
       convert(dl) must ==/(<dl><dt>term</dt><dd><p>definition</p></dd></dl>)

@@ -174,12 +174,27 @@ object reStructuredTextParser extends Parsers with ImplicitConversions {
   def definitionList(indent: Int) =
     rep1(definitionItem(indent)) ^^ DefinitionList
 
+  def splitBy(sep: String)(inline: Seq[Inline]) = inline flatMap {
+    case PlainText(content) => content.split(sep) map PlainText
+    case x => Seq(x)
+  }
+
+  def getClassifiers(inline: Seq[Inline]) = {
+    import CollectionUtils._
+    val segmentText = segment[Inline] {
+      case (PlainText(_), PlainText(_)) => false
+      case _ => true
+    } _
+    segmentText(slide2padded(splitBy(" : ")(inline)))
+  }
+
   def definitionItem(indent: Int): Parser[DefinitionItem] =
     for (
-      term <- repN(indent, ' ') ~> line;
-      inline <- resetInputForResult(par(term.mkString + "\n"));
-      definition <- indented(indent)
-    ) yield DefinitionItem(inline, definition)
+      termWithClassifiers <- repN(indent, ' ') ~> line;
+      definition <- indented(indent);
+      inline <- resetInputForResult(par(termWithClassifiers.mkString + "\n"));
+      Seq(term, classifiers @ _*) = getClassifiers(inline)
+    ) yield DefinitionItem(term, classifiers map Classifier, definition)
 
   def block(indent: Int): Parser[Block] = (
     bulletList(indent) |
@@ -292,7 +307,9 @@ case class BulletItem(content: List[Block]) extends Block
 
 case class BulletList(level: Int, items: List[BulletItem]) extends Block
 
-case class DefinitionItem(term: List[Inline], definition: List[Block]) extends Block
+case class Classifier(inline: Seq[Inline]) extends reStructuredText
+
+case class DefinitionItem(term: Seq[Inline], classifiers: Seq[Classifier], definition: List[Block]) extends Block
 
 case class DefinitionList(items: List[DefinitionItem]) extends Block
 

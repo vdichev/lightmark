@@ -17,8 +17,10 @@ object HTMLTransformer {
       case Literal(content) => <tt>{content}</tt>
       case Quote(content) => <blockquote>{content map convert}</blockquote>
       case DefinitionList(items) => <dl>{items map convert}</dl>
-      case DefinitionItem(term, definition) =>
-        <dt>{term map convert}</dt><dd>{definition map convert}</dd>
+      case Classifier(inlines) =>
+        <xml:group> <span class="classifier-delimiter">:</span> <span class="classifier">{inlines map convert}</span></xml:group>
+      case DefinitionItem(term, classifiers, definition) =>
+        <dt>{term map convert}{classifiers map convert}</dt><dd>{definition map convert}</dd>
     }
   }
   

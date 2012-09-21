@@ -428,6 +428,7 @@ class reStructuredTextParserSpec extends Specification {
                   |  definition""".stripMargin
       ).get must beEqualTo(DefinitionList(List(DefinitionItem(
         List(PlainText("term")),
+        Nil,
         List(FormattedParagraph(List(PlainText("definition"))))
       ))))
     }
@@ -439,6 +440,7 @@ class reStructuredTextParserSpec extends Specification {
                   |  paragraph2""".stripMargin
       ).get must beEqualTo(DefinitionList(List(DefinitionItem(
         List(PlainText("term")),
+        Nil,
         List(FormattedParagraph(List(PlainText("paragraph1"))),
              FormattedParagraph(List(PlainText("paragraph2"))))
       ))))
@@ -450,10 +452,21 @@ class reStructuredTextParserSpec extends Specification {
                   |  * item2""".stripMargin
       ).get must beEqualTo(DefinitionList(List(DefinitionItem(
         List(PlainText("term")),
+        Nil,
         List(BulletList(4, List(
           BulletItem(List(FormattedParagraph(List(PlainText("item1"))))),
           BulletItem(List(FormattedParagraph(List(PlainText("item2")))))
         )))
+      ))))
+    }
+
+    "parse term with classifier and definition" in {
+      block(0)("""|term : classifier
+                  |  definition""".stripMargin
+      ).get must beEqualTo(DefinitionList(List(DefinitionItem(
+        List(PlainText("term")),
+        List(Classifier(List(PlainText("classifier")))),
+        List(FormattedParagraph(List(PlainText("definition"))))
       ))))
     }
   }
